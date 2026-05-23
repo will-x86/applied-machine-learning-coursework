@@ -5,6 +5,7 @@ import re
 import matplotlib.pyplot as plt
 import nltk
 import numpy as np
+from huggingface_hub import login
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from sentence_transformers import SentenceTransformer
@@ -18,7 +19,7 @@ from sklearn.svm import LinearSVC
 from lib import utils
 
 # tfidf_max_features = 50000
-tfidf_max_features = 10000
+tfidf_max_features = 50000
 regex_contamination_percent = 0.259
 seed = 42
 os.environ["SSL_CERT_FILE"] = "/etc/ssl/certs/ca-bundle.crt"
@@ -44,7 +45,7 @@ def get_confusion_matrix(true_label, pred_label):
     return confusion_matrix(true_label, pred_label)
 
 
-def preprocess(text):
+def preprocess(text):  # Ironically barely 1% difference
     text = text.lower()
     text = re.sub(r"\d+", "NUM", text)
     tokens = re.findall(r"\b[a-z]+\b", text)
@@ -112,6 +113,30 @@ def train_and_eval_svm(
     cm = get_confusion_matrix(np.array(val_labels)[val_mask], preds[val_mask])
     acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
     print(f"\n[{name}-svm] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}")
+    print(cm)
+    return cm
+
+
+def train_and_eval_gemma(
+    clean_texts, clean_labels, val_texts, val_labels, val_spam, name
+):
+    login()
+    sbert = SentenceTransformer("google/embeddinggemma-300M")
+    X_train = sbert.encode(
+        list(clean_texts), prompt_name="Classification", show_progress_bar=True
+    )
+    X_val = sbert.encode(
+        list(val_texts), prompt_name="Classification", show_progress_bar=True
+    )
+    clf = LogisticRegression(max_iter=1000)
+    clf.fit(X_train, clean_labels)
+    preds = np.where(val_spam == -1, -1, clf.predict(X_val))
+    val_mask = preds != -1
+    cm = get_confusion_matrix(np.array(val_labels)[val_mask], preds[val_mask])
+    acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
+    print(
+        f"\n[{name}-gemma] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}"
+    )
     print(cm)
     return cm
 
@@ -252,7 +277,10 @@ def run_task1():
         val_spam_iso,
         "IsolationForest",
     )
-    _, axes = plt.subplots(2, 3, figsize=(12, 10))
+    cm_regex_gemma = train_and_eval_gemma(
+        clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
+    )
+    _, axes = plt.subplots(2, 4, figsize=(12, 10))
     cms = [
         cm_regex_logistic,
         cm_regex_svm,
@@ -260,6 +288,7 @@ def run_task1():
         cm_iso_logistic,
         cm_iso_svm,
         cm_iso_bertyboi,
+        cm_regex_gemma,
     ]
     titles = [
         "Regex + Logistic Regression",
@@ -268,6 +297,8 @@ def run_task1():
         "IsolationForest + Logistic Regression",
         "IsolationForest + SVM",
         "IsolationForest + Berty",
+        "IsolationForest + Berty",
+        "Regex + Gemma",
     ]
 
     for ax, cm, title in zip(axes.ravel(), cms, titles):
