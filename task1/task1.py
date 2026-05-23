@@ -5,6 +5,7 @@ import re
 import matplotlib.pyplot as plt
 import nltk
 import numpy as np
+import numpy.typing as npt
 from huggingface_hub import login
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
@@ -19,9 +20,9 @@ from sklearn.svm import LinearSVC
 from lib import utils
 
 # tfidf_max_features = 50000
-tfidf_max_features = 50000
-regex_contamination_percent = 0.259
-seed = 42
+tfidf_max_features: int = 50000
+regex_contamination_percent: float = 0.259
+seed: int = 42
 
 if (host := os.getenv("HOST")) is not None and "framework" in host:
     os.environ["SSL_CERT_FILE"] = "/etc/ssl/certs/ca-bundle.crt"
@@ -32,22 +33,25 @@ if (host := os.getenv("HOST")) is not None and "framework" in host:
 nltk.download("wordnet", quiet=True)
 nltk.download("stopwords", quiet=True)
 
-p_v = "./sentiment_analysis_validation_data.csv"
-p_test = "./sentiment_analysis_test_data.csv"
-p_t = "./sentiment_analysis_training_data.csv"
+p_v: str = "./sentiment_analysis_validation_data.csv"
+p_test: str = "./sentiment_analysis_test_data.csv"
+p_t: str = "./sentiment_analysis_training_data.csv"
 
-STOP = set(stopwords.words("english"))
+STOP: set[str] = set(stopwords.words("english"))
 # STOP = set(stopwords.words("english")) - {"no", "not", "never", "nor", "neither", "without"} - made it worse .. ?
 
-LEMMA = WordNetLemmatizer()
-reg = r"(?i)^(subjects?|from|forwarded by)\s*"
+LEMMA: WordNetLemmatizer = WordNetLemmatizer()
+reg: str = r"(?i)^(subjects?|from|forwarded by)\s*"
 
 
-def get_confusion_matrix(true_label, pred_label):
+def get_confusion_matrix(
+    true_label: npt.ArrayLike,
+    pred_label: npt.ArrayLike,
+) -> npt.NDArray[np.int_]:
     return confusion_matrix(true_label, pred_label)
 
 
-def preprocess(text):  # Ironically barely 1% difference
+def preprocess(text: str):  # Ironically barely 1% difference
     text = text.lower()
     text = re.sub(r"\d+", "NUM", text)
     tokens = re.findall(r"\b[a-z]+\b", text)
@@ -55,7 +59,7 @@ def preprocess(text):  # Ironically barely 1% difference
     return " ".join(tokens)
 
 
-def remove_spam_regex(texts):
+def remove_spam_regex(texts: list[str]) -> npt.NDArray[np.int_]:
     compiled = re.compile(reg)
     return np.array([-1 if compiled.search(t) else 0 for t in texts])
 
