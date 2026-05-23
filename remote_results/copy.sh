@@ -1,7 +1,8 @@
 #!/usr/bin/env sh
 set -e
 
-scp -r pop-os:/home/will/projects/applied-machine-learning-coursework/comparison_confusion.png .
+scp -r pop-os:/home/will/projects/applied-machine-learning-coursework/comparison_confusion.png "$1.png"
+scp -r pop-os:/home/will/projects/applied-machine-learning-coursework/results.txt "$1.txt"
 
 #TYPE=$1
 #
