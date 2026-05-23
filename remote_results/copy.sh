@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -e
 
-scp -r pop-os:/home/will/projects/aml/remote_results/comparison_confusion.png .
+scp -r pop-os:/home/will/projects/applied-machine-learning-coursework/comparison_confusion.png .
 
 #TYPE=$1
 #
