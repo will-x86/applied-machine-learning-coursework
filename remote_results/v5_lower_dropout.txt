@@ -1,0 +1,69 @@
+# Higher dropout ( 0.3 -> 0.5) has imrpoved
+regex + nn gemma from 0.882 to 0.883..
+dropout=0.5 hidden_dim=256 epochs=40
+
+Regex + Logistic
+Accuracy: 0.750
+Confusion Matrix:
+[[404 128]
+ [138 394]]
+
+IsolationForest + Logistic
+Accuracy: 0.728
+Confusion Matrix:
+[[391 147]
+ [142 382]]
+
+Regex + SVM
+Accuracy: 0.758
+Confusion Matrix:
+[[401 131]
+ [127 405]]
+
+IsolationForest + SVM
+Accuracy: 0.727
+Confusion Matrix:
+[[396 142]
+ [148 376]]
+
+Regex + SBERT
+Accuracy: 0.778
+Confusion Matrix:
+[[421 111]
+ [125 407]]
+
+IsolationForest + SBERT
+Accuracy: 0.747
+Confusion Matrix:
+[[407 131]
+ [138 386]]
+
+Regex + Gemma
+Accuracy: 0.882
+Confusion Matrix:
+[[469  63]
+ [ 63 469]]
+
+Regex + NN(MiniLM)
+Accuracy: 0.758
+Confusion Matrix:
+[[419 113]
+ [144 388]]
+
+IsolationForest + NN(MiniLM)
+Accuracy: 0.728
+Confusion Matrix:
+[[375 163]
+ [126 398]]
+
+Regex + NN(Gemma)
+Accuracy: 0.883
+Confusion Matrix:
+[[478  54]
+ [ 71 461]]
+
+IsolationForest + NN(Gemma)
+Accuracy: 0.831
+Confusion Matrix:
+[[462  76]
+ [103 421]]

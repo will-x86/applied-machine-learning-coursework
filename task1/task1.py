@@ -24,7 +24,7 @@ from netofneural.fishingnet import predict_mlp, train_mlp
 # tfidf_max_features = 50000
 tfidf_max_features: int = 50000
 epochs = 40
-hidden_dim = 256
+hidden_dim = 128
 dropout = 0.5  # was 0.3
 regex_contamination_percent: float = 0.259
 seed: int = 42
