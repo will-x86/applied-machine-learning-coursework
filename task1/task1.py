@@ -24,7 +24,7 @@ from netofneural.fishingnet import predict_mlp, train_mlp
 # tfidf_max_features = 50000
 tfidf_max_features: int = 50000
 epochs = 40
-hidden_dim = 128
+hidden_dim = 512
 dropout = 0.5  # was 0.3
 regex_contamination_percent: float = 0.259
 seed: int = 42
@@ -315,31 +315,32 @@ def run_task1():
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
     utils.write_results("results.txt", "Regex + SVM", cm_regex_svm, acc)
-
-    cm_iso_svm, acc = train_and_eval_svm(
-        clean_texts_i,
-        clean_labels_i,
-        text_val,
-        labels_val,
-        val_spam_iso,
-        "IsolationForest",
-    )
-    utils.write_results("results.txt", "IsolationForest + SVM", cm_iso_svm, acc)
-
+    # regex consistently outperformns
+    #     cm_iso_svm, acc = train_and_eval_svm(
+    #         clean_texts_i,
+    #         clean_labels_i,
+    #         text_val,
+    #         labels_val,
+    #         val_spam_iso,
+    #         "IsolationForest",
+    #     )
+    #     utils.write_results("results.txt", "IsolationForest + SVM", cm_iso_svm, acc)
+    #
     cm_regex_bertyboi, acc = train_and_eval_sbert(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
     utils.write_results("results.txt", "Regex + SBERT", cm_regex_bertyboi, acc)
 
-    cm_iso_bertyboi, acc = train_and_eval_sbert(
-        clean_texts_i,
-        clean_labels_i,
-        text_val,
-        labels_val,
-        val_spam_iso,
-        "IsolationForest",
-    )
-    utils.write_results("results.txt", "IsolationForest + SBERT", cm_iso_bertyboi, acc)
+    # regex consistently outperforms
+    #    cm_iso_bertyboi, acc = train_and_eval_sbert(
+    #        clean_texts_i,
+    #        clean_labels_i,
+    #        text_val,
+    #        labels_val,
+    #        val_spam_iso,
+    #        "IsolationForest",
+    #    )
+    #    utils.write_results("results.txt", "IsolationForest + SBERT", cm_iso_bertyboi, acc)
 
     cm_regex_gemma, acc = train_and_eval_gemma(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
@@ -350,21 +351,21 @@ def run_task1():
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
     utils.write_results("results.txt", "Regex + NN(MiniLM)", cm_regex_nn, acc)
-
-    cm_iso_nn, acc = train_and_eval_nn(
-        clean_texts_i,
-        clean_labels_i,
-        text_val,
-        labels_val,
-        val_spam_iso,
-        "IsolationForest",
-    )
-    utils.write_results(
-        "results.txt",
-        "IsolationForest + NN(MiniLM)",
-        cm_iso_nn,
-        acc,
-    )
+    # regex consistently outperforms
+    #    cm_iso_nn, acc = train_and_eval_nn(
+    #        clean_texts_i,
+    #        clean_labels_i,
+    #        text_val,
+    #        labels_val,
+    #        val_spam_iso,
+    #        "IsolationForest",
+    #    )
+    #    utils.write_results(
+    #        "results.txt",
+    #        "IsolationForest + NN(MiniLM)",
+    #        cm_iso_nn,
+    #        acc,
+    #    )
 
     cm_regex_gemma_nn, acc = train_and_eval_nn(
         clean_texts_r,
