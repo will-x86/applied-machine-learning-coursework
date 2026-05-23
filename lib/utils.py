@@ -51,4 +51,4 @@ def write_results(path: str, name: str, cm, acc: float, dim: int = 0, epoch: int
         f.write(f"Accuracy: {acc:.3f}\n")
         f.write(f"Confusion Matrix:\n{cm}\n")
         if dim != 0 or epoch != 0:
-            f.write(f"Epoch: {epoch} - Dim:\n{dim}\n")
+            f.write(f"Epoch: {epoch} - Dim:{dim}\n")
