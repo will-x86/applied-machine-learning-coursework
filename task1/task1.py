@@ -23,7 +23,7 @@ from netofneural.fishingnet import predict_mlp, train_mlp
 
 # tfidf_max_features = 50000
 tfidf_max_features: int = 50000
-epochs = 50
+epochs = 40
 hidden_dim = 256
 regex_contamination_percent: float = 0.259
 seed: int = 42
@@ -259,6 +259,7 @@ def vizualize_tfidf(tfidf, X_train, name):
 
 
 def run_task1():
+    torch.manual_seed(seed)  # oops..
     text_train, labels_train, text_val, labels_val, _text_test = utils.load_data_train(
         path_val=p_v, path_test=p_test, path_train=p_t
     )
