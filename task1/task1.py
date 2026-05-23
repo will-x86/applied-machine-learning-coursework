@@ -25,6 +25,7 @@ from netofneural.fishingnet import predict_mlp, train_mlp
 tfidf_max_features: int = 50000
 epochs = 40
 hidden_dim = 256
+dropout = 0.5  # was 0.3
 regex_contamination_percent: float = 0.259
 seed: int = 42
 print(os.getenv("HOST"))
@@ -101,6 +102,7 @@ def train_and_eval_nn(
     mlp = train_mlp(
         X_train,
         torch.Tensor(clean_labels),
+        dropout,
         hidden_dim=hidden_dim,
         epochs=epochs,
     )
@@ -268,7 +270,8 @@ def run_task1():
         f"vocab reduction: {count_vocabulary_reduction(text_train)} unique words removed"
     )
 
-    open("results.txt", "w").close()
+    with open("results.txt", "w") as f:
+        f.write(f"dropout={dropout} hidden_dim={hidden_dim} epochs={epochs}\n")
 
     # regex to remove spam
     mask_regex = remove_spam_regex(text_train)
@@ -306,8 +309,6 @@ def run_task1():
         "IsolationForest + Logistic",
         cm_iso_logistic,
         acc,
-        hidden_dim,
-        epochs,
     )
 
     cm_regex_svm, acc = train_and_eval_svm(
@@ -348,9 +349,7 @@ def run_task1():
     cm_regex_nn, acc = train_and_eval_nn(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
-    utils.write_results(
-        "results.txt", "Regex + NN(MiniLM)", cm_regex_nn, acc, hidden_dim, epochs
-    )
+    utils.write_results("results.txt", "Regex + NN(MiniLM)", cm_regex_nn, acc)
 
     cm_iso_nn, acc = train_and_eval_nn(
         clean_texts_i,
@@ -365,8 +364,6 @@ def run_task1():
         "IsolationForest + NN(MiniLM)",
         cm_iso_nn,
         acc,
-        hidden_dim,
-        epochs,
     )
 
     cm_regex_gemma_nn, acc = train_and_eval_nn(
@@ -378,9 +375,7 @@ def run_task1():
         "Regex",
         embedding_model="google/embeddinggemma-300M",
     )
-    utils.write_results(
-        "results.txt", "Regex + NN(Gemma)", cm_regex_gemma_nn, acc, hidden_dim, epochs
-    )
+    utils.write_results("results.txt", "Regex + NN(Gemma)", cm_regex_gemma_nn, acc)
 
     cm_iso_gemma_nn, acc = train_and_eval_nn(
         clean_texts_i,
@@ -396,8 +391,6 @@ def run_task1():
         "IsolationForest + NN(Gemma)",
         cm_iso_gemma_nn,
         acc,
-        hidden_dim,
-        epochs,
     )
 
     _, axes = plt.subplots(4, 4, figsize=(12, 10))

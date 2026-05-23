@@ -31,8 +31,8 @@ def predict_mlp(model: SentimentNLP, X: torch.Tensor) -> np.ndarray:
 def train_mlp(
     X_train: torch.Tensor,
     y_train: torch.Tensor,
+    dropout: float,
     hidden_dim: int = 256,
-    dropout: float = 0.3,
     lr: float = 1e-3,
     epochs: int = 15,
     batch_size: int = 128,

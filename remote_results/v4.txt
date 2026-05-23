@@ -1,0 +1,60 @@
+
+Regex + Logistic nAccuracy: 0.750
+Confusion Matrix:
+[[404 128]
+ [138 394]]
+
+IsolationForest + Logistic nAccuracy: 0.728
+Confusion Matrix:
+[[391 147]
+ [142 382]]
+Epoch: 40 - Dim:256
+
+Regex + SVM nAccuracy: 0.758
+Confusion Matrix:
+[[401 131]
+ [127 405]]
+
+IsolationForest + SVM nAccuracy: 0.727
+Confusion Matrix:
+[[396 142]
+ [148 376]]
+
+Regex + SBERT nAccuracy: 0.778
+Confusion Matrix:
+[[421 111]
+ [125 407]]
+
+IsolationForest + SBERT nAccuracy: 0.747
+Confusion Matrix:
+[[407 131]
+ [138 386]]
+
+Regex + Gemma nAccuracy: 0.882
+Confusion Matrix:
+[[469  63]
+ [ 63 469]]
+
+Regex + NN(MiniLM) nAccuracy: 0.745
+Confusion Matrix:
+[[432 100]
+ [171 361]]
+Epoch: 40 - Dim:256
+
+IsolationForest + NN(MiniLM) nAccuracy: 0.717
+Confusion Matrix:
+[[392 146]
+ [155 369]]
+Epoch: 40 - Dim:256
+
+Regex + NN(Gemma) nAccuracy: 0.882
+Confusion Matrix:
+[[473  59]
+ [ 67 465]]
+Epoch: 40 - Dim:256
+
+IsolationForest + NN(Gemma) nAccuracy: 0.821
+Confusion Matrix:
+[[463  75]
+ [115 409]]
+Epoch: 40 - Dim:256
