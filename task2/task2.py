@@ -23,3 +23,35 @@ def visualize_pts(img, pts):
     plt.imshow(img)
     plt.plot(pts[:, 0], pts[:, 1], "+r")
     plt.show()
+
+
+def euclid_dist(pred_pts, gt_pts):
+    """
+    Calculate the euclidean distance between pairs of points
+    :param pred_pts: The predicted points
+    :param gt_pts: The ground truth points
+    :return: An array of shape (no_points,) containing the distance of each predicted point from the ground truth
+    """
+
+    pred_pts = np.reshape(pred_pts, (-1, 2))
+    gt_pts = np.reshape(gt_pts, (-1, 2))
+    return np.sqrt(np.sum(np.square(pred_pts - gt_pts), axis=-1))
+
+
+def save_as_csv(points, location="."):
+    """
+    Save the points out as a .csv file
+    :param points: numpy array of shape (no_test_images, no_points, 2) to be saved
+    :param location: Directory to save results.csv in. Default to current working directory
+    """
+    assert (
+        points.shape[0] == 554
+    ), "wrong number of image points, should be 554 test images"
+    assert (
+        np.prod(points.shape[1:]) == 5 * 2
+    ), "wrong number of points provided. There should be 5 points with 2 values (x,y) per point"
+    np.savetxt(
+        location + "/results_task2.csv",
+        np.reshape(points, (points.shape[0], -1)),
+        delimiter=",",
+    )
