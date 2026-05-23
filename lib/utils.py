@@ -1,8 +1,47 @@
 # pyright: basic
-from typing import Any
+import os
+import subprocess
+from typing import Any, Tuple
 
 import numpy as np
 import pandas as pd
+
+
+def load_images(
+    path_train,
+    path_val,
+    path_test,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+
+    downloads = {
+        path_train: "https://sussex.box.com/shared/static/dn9s85sr5yjourp6gpjethb2a90631v7.npz",
+        path_val: "https://sussex.box.com/shared/static/0s9hi6qfh383b47ytdf87z6p36dm61t6.npz",
+        path_test: "https://sussex.box.com/shared/static/w03dbk7skhlcqhwku7f4ehtdawulg6fp.npz",
+    }
+
+    for path, url in downloads.items():
+        if not os.path.exists(path):
+            print(f"'{path}' not found downloadering")
+            subprocess.run(["wget", url, "-O", path], check=True)
+
+    data_train = np.load(path_train, allow_pickle=True)
+    images_train = data_train["images"]
+    pts_train = data_train["points"]
+    print(
+        f"Train: \nImages shape: {images_train.shape}\nPoints shape: {pts_train.shape}"
+    )
+
+    data_val = np.load(path_val, allow_pickle=True)
+    images_val = data_val["images"]
+    pts_val = data_val["points"]
+    print(f"Val: \nImages shape: {images_val.shape}\nPoints shape: {pts_val.shape}")
+
+    data_test = np.load(path_test, allow_pickle=True)
+    images_test = data_test["images"]
+    print(f"Test: \nImages shape: {images_test.shape}")
+    print("a" * 60)
+
+    return images_train, pts_train, images_val, pts_val, images_test
 
 
 def load_data_train(path_train: str, path_val: str, path_test: str) -> Any:

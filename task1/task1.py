@@ -38,9 +38,9 @@ if (host := os.getenv("HOST")) is not None and "framework" in host:
 nltk.download("wordnet", quiet=True)
 nltk.download("stopwords", quiet=True)
 
-p_v: str = "./sentiment_analysis_validation_data.csv"
-p_test: str = "./sentiment_analysis_test_data.csv"
-p_t: str = "./sentiment_analysis_training_data.csv"
+p_v: str = "./data/sentiment_analysis_validation_data.csv"
+p_test: str = "./data/sentiment_analysis_test_data.csv"
+p_t: str = "./data/sentiment_analysis_training_data.csv"
 
 STOP: set[str] = set(stopwords.words("english"))
 # STOP = set(stopwords.words("english")) - {"no", "not", "never", "nor", "neither", "without"} - made it worse .. ?

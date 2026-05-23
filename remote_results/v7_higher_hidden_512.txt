@@ -1,0 +1,43 @@
+dropout=0.5 hidden_dim=512 epochs=40
+
+Regex + Logistic
+Accuracy: 0.750
+Confusion Matrix:
+[[404 128]
+ [138 394]]
+
+IsolationForest + Logistic
+Accuracy: 0.728
+Confusion Matrix:
+[[391 147]
+ [142 382]]
+
+Regex + SVM
+Accuracy: 0.758
+Confusion Matrix:
+[[401 131]
+ [127 405]]
+
+Regex + SBERT
+Accuracy: 0.778
+Confusion Matrix:
+[[421 111]
+ [125 407]]
+
+Regex + Gemma
+Accuracy: 0.882
+Confusion Matrix:
+[[469  63]
+ [ 63 469]]
+
+Regex + NN(MiniLM)
+Accuracy: 0.762
+Confusion Matrix:
+[[429 103]
+ [150 382]]
+
+Regex + NN(Gemma)
+Accuracy: 0.885
+Confusion Matrix:
+[[470  62]
+ [ 60 472]]

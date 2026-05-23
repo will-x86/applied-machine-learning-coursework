@@ -1,0 +1,4 @@
+data/face_alignment_test_data.npz filter=lfs diff=lfs merge=lfs -text
+data/face_alignment_training_data.npz filter=lfs diff=lfs merge=lfs -text
+data/face_alignment_validation_data.npz filter=lfs diff=lfs merge=lfs -text
+data/*.npz filter=lfs diff=lfs merge=lfs -text
