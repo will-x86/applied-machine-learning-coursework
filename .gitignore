@@ -16,3 +16,4 @@ docs
 #nixos speciifc
 .direnv
 out*.png
+*.zip

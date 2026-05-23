@@ -1,4 +1,6 @@
 # pyright: basic
+import os
+
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
@@ -44,11 +46,31 @@ def print_images_stats():
     # all 255x255..
 
 
+def save_grid():
+    nrows = 10
+    ncols = 10
+    img_train, pts_train, *_ = utils.load_images(
+        path_train=path_train, path_val=path_val, path_test=path_test
+    )
+    indices = np.linspace(0, len(img_train) - 1, nrows * ncols, dtype=int)
+    H, W = img_train.shape[1], img_train.shape[2]
+    grid = Image.new("RGB", (ncols * W, nrows * H), (30, 30, 30))
+    for i, idx in enumerate(indices):
+        cell = Image.fromarray(img_train[idx])
+        draw = ImageDraw.Draw(cell)
+        for x, y in pts_train[idx]:
+            draw.line([(x - 5, y), (x + 5, y)], fill="red", width=2)
+            draw.line([(x, y - 5), (x, y + 5)], fill="red", width=2)
+        grid.paste(cell, (i % ncols * W, i // ncols * H))
+    grid.save("grid.png")
+
+
 def run_task2():
-    img_train, pts_train, img_val, pts_val, img_test = utils.load_images(
+    img_train, pts_train, _img_val, _pts_val, _img_test = utils.load_images(
         path_train=path_train, path_val=path_val, path_test=path_test
     )
     print_images_stats()
+    save_grid()
 
     for i in range(3):
         idx = np.random.randint(0, img_train.shape[0])
