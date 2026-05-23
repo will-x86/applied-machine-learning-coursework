@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import nltk
 import numpy as np
 import numpy.typing as npt
+import torch
 from huggingface_hub import login
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
@@ -18,12 +19,13 @@ from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 from sklearn.svm import LinearSVC
 
 from lib import utils
+from netofneural.fishingnet import predict_mlp, train_mlp
 
 # tfidf_max_features = 50000
 tfidf_max_features: int = 50000
 regex_contamination_percent: float = 0.259
 seed: int = 42
-
+print(os.getenv("HOST"))
 if (host := os.getenv("HOST")) is not None and "framework" in host:
     os.environ["SSL_CERT_FILE"] = "/etc/ssl/certs/ca-bundle.crt"
     os.environ["HSA_OVERRIDE_GFX_VERSION"] = (
@@ -76,6 +78,42 @@ def remove_spam_isolation_tfidf(train_texts, target_texts=None):
     )
     preds = forest.fit(X_tr).predict(X_tg)
     return np.where(preds == 1, 0, -1)
+
+
+def train_and_eval_nn(
+    clean_texts,
+    clean_labels,
+    val_texts,
+    val_labels,
+    val_spam,
+    name,
+    embedding_model: str = "all-MiniLM-L6-v2",
+    hidden_dim: int = 256,
+    epochs: int = 15,
+):
+    sbert = SentenceTransformer(embedding_model)
+    print(f"[{name}-nn] encoding training texts")
+    X_train = sbert.encode(list(clean_texts), show_progress_bar=True)
+    print(f"[{name}-nn] encoding validation text")
+    X_val = sbert.encode(list(val_texts), show_progress_bar=True)
+
+    print(f"[{name}-nn] training MLP (input_dim={X_train.shape[1]})")
+    mlp = train_mlp(
+        X_train,
+        torch.Tensor(clean_labels),
+        hidden_dim=hidden_dim,
+        epochs=epochs,
+    )
+
+    nn_preds = predict_mlp(mlp, X_val)
+    preds = np.where(val_spam == -1, -1, nn_preds)
+    val_mask = preds != -1
+
+    cm = get_confusion_matrix(np.array(val_labels)[val_mask], preds[val_mask])
+    acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
+    print(f"\n[{name}-nn] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}")
+    print(cm)
+    return cm
 
 
 def train_and_eval_sbert(
@@ -286,24 +324,61 @@ def run_task1():
     cm_regex_gemma = train_and_eval_gemma(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
+    cm_regex_nn = train_and_eval_nn(
+        clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
+    )
+    cm_iso_nn = train_and_eval_nn(
+        clean_texts_i,
+        clean_labels_i,
+        text_val,
+        labels_val,
+        val_spam_iso,
+        "IsolationForest",
+    )
+    cm_regex_gemma_nn = train_and_eval_nn(
+        clean_texts_r,
+        clean_labels_r,
+        text_val,
+        labels_val,
+        val_spam_regex,
+        "Regex",
+        embedding_model="google/embeddinggemma-300M",
+    )
+    cm_iso_gemma_nn = train_and_eval_nn(
+        clean_texts_i,
+        clean_labels_i,
+        text_val,
+        labels_val,
+        val_spam_iso,
+        "IsolationForest",
+        embedding_model="google/embeddinggemma-300M",
+    )
     _, axes = plt.subplots(2, 4, figsize=(12, 10))
     cms = [
         cm_regex_logistic,
         cm_regex_svm,
         cm_regex_bertyboi,
+        cm_regex_gemma,
         cm_iso_logistic,
         cm_iso_svm,
         cm_iso_bertyboi,
-        cm_regex_gemma,
+        cm_regex_nn,
+        cm_iso_nn,
+        cm_regex_gemma_nn,
+        cm_iso_gemma_nn,
     ]
     titles = [
         "Regex + Logistic Regression",
         "Regex + SVM",
-        "Regex + Berty",
+        "Regex + all-minilm-l6-v2",
+        "Regex + Gemma",
         "IsolationForest + Logistic Regression",
         "IsolationForest + SVM",
-        "IsolationForest + Berty",
-        "Regex + Gemma",
+        "IsolationForest + all-minilm-l6-v2",
+        "Regex + NN(all-minilm-l6-v2)",
+        "IsolationForest + NN(all-minilm-l6-v2)",
+        "Regex + gemmaNN",
+        "IsolationForest+ gemmaNN",
     ]
 
     for ax, cm, title in zip(axes.ravel(), cms, titles):
