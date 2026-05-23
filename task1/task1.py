@@ -299,7 +299,6 @@ def run_task1():
         "IsolationForest + Logistic Regression",
         "IsolationForest + SVM",
         "IsolationForest + Berty",
-        "IsolationForest + Berty",
         "Regex + Gemma",
     ]
 
@@ -310,4 +309,4 @@ def run_task1():
         ax.set_title(title)
 
     plt.tight_layout()
-    plt.savefig("spam_comparison.png", dpi=150)
+    plt.savefig("comparison_confusion.png", dpi=150)
