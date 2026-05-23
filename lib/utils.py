@@ -29,6 +29,7 @@ def load_data_train(path_train: str, path_val: str, path_test: str) -> Any:
     # extract the text
     text_test = data_test["text"].values
     print(f"Test: \n Data shape: {data_test.shape}\nTextShape: {text_test.shape}")
+    print("a" * 60)
     return text_train, labels_train, text_val, labels_val, text_test
 
 
