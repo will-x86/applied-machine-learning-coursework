@@ -9,3 +9,70 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "regex>=2026.5.9",
 ]
+
+# Took me almost a day to get this to working proper for AIAB
+# My fault for having an amd laptop & nvidia pc
+# uv run --extra=rocm main.py
+# uv run --extra=cuda main.py
+[project.optional-dependencies]
+cpu = [
+    "torch",
+    "torchvision",
+    "sentence-transformers",
+]
+cuda = [
+    "torch",
+    "torchvision",
+    "sentence-transformers",
+]
+rocm = [
+    "torch",
+    "torchvision",
+    "pytorch-triton-rocm",
+    "sentence-transformers",
+]
+
+[tool.uv]
+conflicts = [
+  [
+    { extra = "cpu" },
+    { extra = "cuda" },
+    { extra = "rocm" },
+  ],
+]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cu128", extra = "cuda" },
+    { index = "pytorch-rocm", extra = "rocm" },
+]
+torchvision = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cu128", extra = "cuda" },
+    { index = "pytorch-rocm", extra = "rocm" },
+]
+pytorch-triton-rocm = [
+    { index = "pytorch-rocm", extra = "rocm" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-rocm"
+url = "https://download.pytorch.org/whl/rocm6.4"
+explicit = true
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.39.3",
+]
+

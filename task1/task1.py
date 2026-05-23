@@ -7,17 +7,25 @@ import nltk
 import numpy as np
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+from sentence_transformers import SentenceTransformer
 from sklearn.decomposition import PCA
 from sklearn.ensemble import IsolationForest
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
+from sklearn.svm import LinearSVC
 
 from lib import utils
 
+# tfidf_max_features = 50000
+tfidf_max_features = 10000
 regex_contamination_percent = 0.259
 seed = 42
 os.environ["SSL_CERT_FILE"] = "/etc/ssl/certs/ca-bundle.crt"
+os.environ["HSA_OVERRIDE_GFX_VERSION"] = (
+    "11.0.0"  # rdna 2 laptop - shucks - disable if on rdna3 (90XX series AMD)
+)
+
 nltk.download("wordnet", quiet=True)
 nltk.download("stopwords", quiet=True)
 
@@ -26,6 +34,8 @@ p_test = "./sentiment_analysis_test_data.csv"
 p_t = "./sentiment_analysis_training_data.csv"
 
 STOP = set(stopwords.words("english"))
+# STOP = set(stopwords.words("english")) - {"no", "not", "never", "nor", "neither", "without"} - made it worse .. ?
+
 LEMMA = WordNetLemmatizer()
 reg = r"(?i)^(subjects?|from|forwarded by)\s*"
 
@@ -50,7 +60,7 @@ def remove_spam_regex(texts):
 def remove_spam_isolation_tfidf(train_texts, target_texts=None):
     if target_texts is None:
         target_texts = train_texts
-    vec = TfidfVectorizer(max_features=5000, sublinear_tf=True)
+    vec = TfidfVectorizer(max_features=tfidf_max_features, sublinear_tf=True)
     X_tr = vec.fit_transform(train_texts)
     X_tg = vec.transform(target_texts)
     # pyright will be the death of me
@@ -61,7 +71,26 @@ def remove_spam_isolation_tfidf(train_texts, target_texts=None):
     return np.where(preds == 1, 0, -1)
 
 
-def train_and_eval(
+def train_and_eval_sbert(
+    clean_texts, clean_labels, val_texts, val_labels, val_spam, name
+):
+    sbert = SentenceTransformer("all-MiniLM-L6-v2")
+    X_train = sbert.encode(list(clean_texts), show_progress_bar=True)
+    X_val = sbert.encode(list(val_texts), show_progress_bar=True)
+    clf = LogisticRegression(max_iter=1000)
+    clf.fit(X_train, clean_labels)
+    preds = np.where(val_spam == -1, -1, clf.predict(X_val))
+    val_mask = preds != -1
+    cm = get_confusion_matrix(np.array(val_labels)[val_mask], preds[val_mask])
+    acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
+    print(
+        f"\n[{name}-sbert] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}"
+    )
+    print(cm)
+    return cm
+
+
+def train_and_eval_svm(
     clean_texts,
     clean_labels,
     val_texts,
@@ -69,7 +98,35 @@ def train_and_eval(
     val_spam,
     name,
 ):
-    tfidf = TfidfVectorizer(ngram_range=(1, 2), max_features=10000, sublinear_tf=True)
+    tfidf = TfidfVectorizer(
+        ngram_range=(1, 2), max_features=tfidf_max_features, sublinear_tf=True
+    )
+    X_train = tfidf.fit_transform([preprocess(t) for t in clean_texts])
+    vizualize_tfidf(tfidf, X_train, name)
+    X_val = tfidf.transform([preprocess(t) for t in val_texts])
+
+    clf = LinearSVC(random_state=seed, max_iter=2000)
+    clf.fit(X_train, clean_labels)
+    preds = np.where(val_spam == -1, -1, clf.predict(X_val))
+    val_mask = preds != -1
+    cm = get_confusion_matrix(np.array(val_labels)[val_mask], preds[val_mask])
+    acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
+    print(f"\n[{name}-svm] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}")
+    print(cm)
+    return cm
+
+
+def train_and_eval_logistic(
+    clean_texts,
+    clean_labels,
+    val_texts,
+    val_labels,
+    val_spam,
+    name,
+):
+    tfidf = TfidfVectorizer(
+        ngram_range=(1, 2), max_features=tfidf_max_features, sublinear_tf=True
+    )
     X_train = tfidf.fit_transform([preprocess(t) for t in clean_texts])
     vizualize_tfidf(tfidf, X_train, name)
     X_val = tfidf.transform([preprocess(t) for t in val_texts])
@@ -79,7 +136,9 @@ def train_and_eval(
     val_mask = preds != -1
     cm = get_confusion_matrix(np.array(val_labels)[val_mask], preds[val_mask])
     acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
-    print(f"\n[{name}] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}")
+    print(
+        f"\n[{name}-logistic] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}"
+    )
     print(cm)
     return cm
 
@@ -93,7 +152,7 @@ def count_vocabulary_reduction(raw_texts):
 
 
 def visualize_isolation_forest(train_texts, name="IsolationForest"):
-    vec = TfidfVectorizer(max_features=5000, sublinear_tf=True)
+    vec = TfidfVectorizer(max_features=tfidf_max_features, sublinear_tf=True)
     X = vec.fit_transform(train_texts)
 
     preds = IsolationForest(
@@ -143,15 +202,15 @@ def run_task1():
     print(
         f"Regex flagged {sum(1 for s in mask_regex if s == -1)} of {len(text_train)} train samples as spam "
     )
-    print("Non-Spam Samples (regex)")
-    for text, mask_val in zip(text_train, mask_regex):
-        if mask_val == 0:
-            print(f"- {text}")
+    #    print("Non-Spam Samples (regex)")
+    #    for text, mask_val in zip(text_train, mask_regex):
+    #        if mask_val == 0:
+    #            print(f"- {text}")
 
     clean_texts_r = [t for t, s in zip(text_train, mask_regex) if s == 0]
     clean_labels_r = np.array(labels_train)[mask_regex == 0]
     val_spam_regex = remove_spam_regex(text_val)
-    cm_regex = train_and_eval(
+    cm_regex_logistic = train_and_eval_logistic(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
 
@@ -162,7 +221,18 @@ def run_task1():
     clean_texts_i = [t for t, s in zip(text_train, mask_iso) if s == 0]
     clean_labels_i = np.array(labels_train)[mask_iso == 0]
     val_spam_iso = remove_spam_isolation_tfidf(text_train, text_val)
-    cm_iso = train_and_eval(
+    cm_iso_logistic = train_and_eval_logistic(
+        clean_texts_i,
+        clean_labels_i,
+        text_val,
+        labels_val,
+        val_spam_iso,
+        "IsolationForest",
+    )
+    cm_regex_svm = train_and_eval_svm(
+        clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
+    )
+    cm_iso_svm = train_and_eval_svm(
         clean_texts_i,
         clean_labels_i,
         text_val,
@@ -171,12 +241,40 @@ def run_task1():
         "IsolationForest",
     )
 
-    # Plot conf matrixes
-    _, axes = plt.subplots(1, 2, figsize=(10, 4))
-    for ax, cm, title in zip(axes, [cm_regex, cm_iso], ["Regex", "IsolationForest"]):
+    cm_regex_bertyboi = train_and_eval_sbert(
+        clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
+    )
+    cm_iso_bertyboi = train_and_eval_sbert(
+        clean_texts_i,
+        clean_labels_i,
+        text_val,
+        labels_val,
+        val_spam_iso,
+        "IsolationForest",
+    )
+    _, axes = plt.subplots(2, 3, figsize=(12, 10))
+    cms = [
+        cm_regex_logistic,
+        cm_regex_svm,
+        cm_regex_bertyboi,
+        cm_iso_logistic,
+        cm_iso_svm,
+        cm_iso_bertyboi,
+    ]
+    titles = [
+        "Regex + Logistic Regression",
+        "Regex + SVM",
+        "Regex + Berty",
+        "IsolationForest + Logistic Regression",
+        "IsolationForest + SVM",
+        "IsolationForest + Berty",
+    ]
+
+    for ax, cm, title in zip(axes.ravel(), cms, titles):
         ConfusionMatrixDisplay(cm, display_labels=["neg", "pos"]).plot(
             ax=ax, colorbar=False
         )
         ax.set_title(title)
+
     plt.tight_layout()
     plt.savefig("spam_comparison.png", dpi=150)
