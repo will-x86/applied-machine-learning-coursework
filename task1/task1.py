@@ -399,7 +399,7 @@ def run_task1():
         epochs,
     )
 
-    _, axes = plt.subplots(2, 4, figsize=(12, 10))
+    _, axes = plt.subplots(3, 3, figsize=(12, 10))
     cms = [
         cm_regex_logistic,
         cm_regex_svm,
