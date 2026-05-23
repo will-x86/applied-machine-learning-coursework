@@ -1,0 +1,2 @@
+# pyright: basic
+print("hi!")
