@@ -1,6 +1,10 @@
 # pyright: basic
 import argparse
 
+import matplotlib
+
+matplotlib.use("QtAgg")
+
 from task1 import task1
 from task2 import task2
 

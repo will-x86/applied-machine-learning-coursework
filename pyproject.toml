@@ -10,7 +10,7 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "regex>=2026.5.9",
     "nltk",
-    "pandas"
+    "pandas",
 ]
 
 # Took me almost a day to get this to working proper for AIAB
