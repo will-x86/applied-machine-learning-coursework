@@ -89,7 +89,7 @@ def train_and_eval_nn(
     name,
     embedding_model: str = "all-MiniLM-L6-v2",
     hidden_dim: int = 256,
-    epochs: int = 15,
+    epochs: int = 25,
 ):
     sbert = SentenceTransformer(embedding_model)
     print(f"[{name}-nn] encoding training texts")
