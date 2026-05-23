@@ -377,22 +377,22 @@ def run_task1():
         embedding_model="google/embeddinggemma-300M",
     )
     utils.write_results("results.txt", "Regex + NN(Gemma)", cm_regex_gemma_nn, acc)
-
-    cm_iso_gemma_nn, acc = train_and_eval_nn(
-        clean_texts_i,
-        clean_labels_i,
-        text_val,
-        labels_val,
-        val_spam_iso,
-        "IsolationForest",
-        embedding_model="google/embeddinggemma-300M",
-    )
-    utils.write_results(
-        "results.txt",
-        "IsolationForest + NN(Gemma)",
-        cm_iso_gemma_nn,
-        acc,
-    )
+    # regex outperforms
+    #    cm_iso_gemma_nn, acc = train_and_eval_nn(
+    #        clean_texts_i,
+    #        clean_labels_i,
+    #        text_val,
+    #        labels_val,
+    #        val_spam_iso,
+    #        "IsolationForest",
+    #        embedding_model="google/embeddinggemma-300M",
+    #    )
+    #    utils.write_results(
+    #        "results.txt",
+    #        "IsolationForest + NN(Gemma)",
+    #        cm_iso_gemma_nn,
+    #        acc,
+    #    )
 
     _, axes = plt.subplots(4, 4, figsize=(12, 10))
     cms = [
@@ -401,12 +401,12 @@ def run_task1():
         cm_regex_bertyboi,
         cm_regex_gemma,
         cm_iso_logistic,
-        cm_iso_svm,
-        cm_iso_bertyboi,
+        # cm_iso_svm,
+        # cm_iso_bertyboi,
         cm_regex_nn,
-        cm_iso_nn,
+        # cm_iso_nn,
         cm_regex_gemma_nn,
-        cm_iso_gemma_nn,
+        # cm_iso_gemma_nn,
     ]
     titles = [
         "Regex + Logistic Regression",
@@ -414,12 +414,12 @@ def run_task1():
         "Regex + all-minilm-l6-v2",
         "Regex + Gemma",
         "IsolationForest + Logistic Regression",
-        "IsolationForest + SVM",
-        "IsolationForest + all-minilm-l6-v2",
+        # "IsolationForest + SVM",
+        # "IsolationForest + all-minilm-l6-v2",
         "Regex + NN(all-minilm-l6-v2)",
-        "IsolationForest + NN(all-minilm-l6-v2)",
+        # "IsolationForest + NN(all-minilm-l6-v2)",
         "Regex + gemmaNN",
-        "IsolationForest+ gemmaNN",
+        # "IsolationForest+ gemmaNN",
     ]
 
     for ax, cm, title in zip(axes.ravel(), cms, titles):
