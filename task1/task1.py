@@ -23,7 +23,7 @@ tfidf_max_features = 50000
 regex_contamination_percent = 0.259
 seed = 42
 
-if os.get_env["HOST"] == "framework":
+if (host := os.getenv("HOST")) is not None and "framework" in host:
     os.environ["SSL_CERT_FILE"] = "/etc/ssl/certs/ca-bundle.crt"
     os.environ["HSA_OVERRIDE_GFX_VERSION"] = (
         "11.0.0"  # rdna 2 laptop - shucks - disable if on rdna3 (90XX series AMD)
