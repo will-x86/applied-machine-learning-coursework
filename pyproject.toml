@@ -11,6 +11,8 @@ dependencies = [
     "regex>=2026.5.9",
     "nltk",
     "pandas",
+    "pillow[rocm]>=12.2.0",
+    "opencv-python"
 ]
 
 # Took me almost a day to get this to working proper for AIAB
