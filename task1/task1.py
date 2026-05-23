@@ -23,6 +23,8 @@ from netofneural.fishingnet import predict_mlp, train_mlp
 
 # tfidf_max_features = 50000
 tfidf_max_features: int = 50000
+epochs = 50
+hidden_dim = 256
 regex_contamination_percent: float = 0.259
 seed: int = 42
 print(os.getenv("HOST"))
@@ -88,8 +90,6 @@ def train_and_eval_nn(
     val_spam,
     name,
     embedding_model: str = "all-MiniLM-L6-v2",
-    hidden_dim: int = 256,
-    epochs: int = 50,
 ):
     sbert = SentenceTransformer(embedding_model)
     print(f"[{name}-nn] encoding training texts")
@@ -301,7 +301,12 @@ def run_task1():
         "IsolationForest",
     )
     utils.write_results(
-        "results.txt", "IsolationForest + Logistic", cm_iso_logistic, acc
+        "results.txt",
+        "IsolationForest + Logistic",
+        cm_iso_logistic,
+        acc,
+        hidden_dim,
+        epochs,
     )
 
     cm_regex_svm, acc = train_and_eval_svm(
@@ -342,7 +347,9 @@ def run_task1():
     cm_regex_nn, acc = train_and_eval_nn(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
-    utils.write_results("results.txt", "Regex + NN(MiniLM)", cm_regex_nn, acc)
+    utils.write_results(
+        "results.txt", "Regex + NN(MiniLM)", cm_regex_nn, acc, hidden_dim, epochs
+    )
 
     cm_iso_nn, acc = train_and_eval_nn(
         clean_texts_i,
@@ -352,7 +359,14 @@ def run_task1():
         val_spam_iso,
         "IsolationForest",
     )
-    utils.write_results("results.txt", "IsolationForest + NN(MiniLM)", cm_iso_nn, acc)
+    utils.write_results(
+        "results.txt",
+        "IsolationForest + NN(MiniLM)",
+        cm_iso_nn,
+        acc,
+        hidden_dim,
+        epochs,
+    )
 
     cm_regex_gemma_nn, acc = train_and_eval_nn(
         clean_texts_r,
@@ -363,7 +377,9 @@ def run_task1():
         "Regex",
         embedding_model="google/embeddinggemma-300M",
     )
-    utils.write_results("results.txt", "Regex + NN(Gemma)", cm_regex_gemma_nn, acc)
+    utils.write_results(
+        "results.txt", "Regex + NN(Gemma)", cm_regex_gemma_nn, acc, hidden_dim, epochs
+    )
 
     cm_iso_gemma_nn, acc = train_and_eval_nn(
         clean_texts_i,
@@ -375,7 +391,12 @@ def run_task1():
         embedding_model="google/embeddinggemma-300M",
     )
     utils.write_results(
-        "results.txt", "IsolationForest + NN(Gemma)", cm_iso_gemma_nn, acc
+        "results.txt",
+        "IsolationForest + NN(Gemma)",
+        cm_iso_gemma_nn,
+        acc,
+        hidden_dim,
+        epochs,
     )
 
     _, axes = plt.subplots(2, 4, figsize=(12, 10))
