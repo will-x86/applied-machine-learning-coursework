@@ -113,7 +113,7 @@ def train_and_eval_nn(
     acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
     print(f"\n[{name}-nn] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}")
     print(cm)
-    return cm
+    return cm, acc
 
 
 def train_and_eval_sbert(
@@ -132,7 +132,7 @@ def train_and_eval_sbert(
         f"\n[{name}-sbert] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}"
     )
     print(cm)
-    return cm
+    return cm, acc
 
 
 def train_and_eval_svm(
@@ -158,7 +158,7 @@ def train_and_eval_svm(
     acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
     print(f"\n[{name}-svm] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}")
     print(cm)
-    return cm
+    return cm, acc
 
 
 def train_and_eval_gemma(
@@ -182,7 +182,7 @@ def train_and_eval_gemma(
         f"\n[{name}-gemma] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}"
     )
     print(cm)
-    return cm
+    return cm, acc
 
 
 def train_and_eval_logistic(
@@ -209,7 +209,7 @@ def train_and_eval_logistic(
         f"\n[{name}-logistic] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}"
     )
     print(cm)
-    return cm
+    return cm, acc
 
 
 def count_vocabulary_reduction(raw_texts):
@@ -266,22 +266,23 @@ def run_task1():
     print(
         f"vocab reduction: {count_vocabulary_reduction(text_train)} unique words removed"
     )
+
+    open("results.txt", "w").close()
+
     # regex to remove spam
     mask_regex = remove_spam_regex(text_train)
     print(
         f"Regex flagged {sum(1 for s in mask_regex if s == -1)} of {len(text_train)} train samples as spam "
     )
-    #    print("Non-Spam Samples (regex)")
-    #    for text, mask_val in zip(text_train, mask_regex):
-    #        if mask_val == 0:
-    #            print(f"- {text}")
 
     clean_texts_r = [t for t, s in zip(text_train, mask_regex) if s == 0]
     clean_labels_r = np.array(labels_train)[mask_regex == 0]
     val_spam_regex = remove_spam_regex(text_val)
-    cm_regex_logistic = train_and_eval_logistic(
+
+    cm_regex_logistic, acc = train_and_eval_logistic(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
+    utils.write_results("results.txt", "Regex + Logistic", cm_regex_logistic, acc)
 
     # Isolation Forest to remove spam
     mask_iso = remove_spam_isolation_tfidf(text_train)
@@ -290,7 +291,8 @@ def run_task1():
     clean_texts_i = [t for t, s in zip(text_train, mask_iso) if s == 0]
     clean_labels_i = np.array(labels_train)[mask_iso == 0]
     val_spam_iso = remove_spam_isolation_tfidf(text_train, text_val)
-    cm_iso_logistic = train_and_eval_logistic(
+
+    cm_iso_logistic, acc = train_and_eval_logistic(
         clean_texts_i,
         clean_labels_i,
         text_val,
@@ -298,22 +300,16 @@ def run_task1():
         val_spam_iso,
         "IsolationForest",
     )
-    cm_regex_svm = train_and_eval_svm(
-        clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
-    )
-    cm_iso_svm = train_and_eval_svm(
-        clean_texts_i,
-        clean_labels_i,
-        text_val,
-        labels_val,
-        val_spam_iso,
-        "IsolationForest",
+    utils.write_results(
+        "results.txt", "IsolationForest + Logistic", cm_iso_logistic, acc
     )
 
-    cm_regex_bertyboi = train_and_eval_sbert(
+    cm_regex_svm, acc = train_and_eval_svm(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
-    cm_iso_bertyboi = train_and_eval_sbert(
+    utils.write_results("results.txt", "Regex + SVM", cm_regex_svm, acc)
+
+    cm_iso_svm, acc = train_and_eval_svm(
         clean_texts_i,
         clean_labels_i,
         text_val,
@@ -321,13 +317,14 @@ def run_task1():
         val_spam_iso,
         "IsolationForest",
     )
-    cm_regex_gemma = train_and_eval_gemma(
+    utils.write_results("results.txt", "IsolationForest + SVM", cm_iso_svm, acc)
+
+    cm_regex_bertyboi, acc = train_and_eval_sbert(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
-    cm_regex_nn = train_and_eval_nn(
-        clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
-    )
-    cm_iso_nn = train_and_eval_nn(
+    utils.write_results("results.txt", "Regex + SBERT", cm_regex_bertyboi, acc)
+
+    cm_iso_bertyboi, acc = train_and_eval_sbert(
         clean_texts_i,
         clean_labels_i,
         text_val,
@@ -335,7 +332,29 @@ def run_task1():
         val_spam_iso,
         "IsolationForest",
     )
-    cm_regex_gemma_nn = train_and_eval_nn(
+    utils.write_results("results.txt", "IsolationForest + SBERT", cm_iso_bertyboi, acc)
+
+    cm_regex_gemma, acc = train_and_eval_gemma(
+        clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
+    )
+    utils.write_results("results.txt", "Regex + Gemma", cm_regex_gemma, acc)
+
+    cm_regex_nn, acc = train_and_eval_nn(
+        clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
+    )
+    utils.write_results("results.txt", "Regex + NN(MiniLM)", cm_regex_nn, acc)
+
+    cm_iso_nn, acc = train_and_eval_nn(
+        clean_texts_i,
+        clean_labels_i,
+        text_val,
+        labels_val,
+        val_spam_iso,
+        "IsolationForest",
+    )
+    utils.write_results("results.txt", "IsolationForest + NN(MiniLM)", cm_iso_nn, acc)
+
+    cm_regex_gemma_nn, acc = train_and_eval_nn(
         clean_texts_r,
         clean_labels_r,
         text_val,
@@ -344,7 +363,9 @@ def run_task1():
         "Regex",
         embedding_model="google/embeddinggemma-300M",
     )
-    cm_iso_gemma_nn = train_and_eval_nn(
+    utils.write_results("results.txt", "Regex + NN(Gemma)", cm_regex_gemma_nn, acc)
+
+    cm_iso_gemma_nn, acc = train_and_eval_nn(
         clean_texts_i,
         clean_labels_i,
         text_val,
@@ -353,6 +374,10 @@ def run_task1():
         "IsolationForest",
         embedding_model="google/embeddinggemma-300M",
     )
+    utils.write_results(
+        "results.txt", "IsolationForest + NN(Gemma)", cm_iso_gemma_nn, acc
+    )
+
     _, axes = plt.subplots(2, 4, figsize=(12, 10))
     cms = [
         cm_regex_logistic,

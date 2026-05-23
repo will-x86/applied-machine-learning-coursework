@@ -43,3 +43,10 @@ def save_as_csv(pred_labels, location="."):
         pred_labels.shape[0] == 1434
     ), "wrong number of labels, should be 1434 test labels"
     np.savetxt(location + "/results_task1.csv", pred_labels, delimiter=",")
+
+
+def write_results(path: str, name: str, cm, acc: float):
+    with open(path, "a") as f:
+        f.write(f"\n{name} n")
+        f.write(f"Accuracy: {acc:.3f}\n")
+        f.write(f"Confusion Matrix:\n{cm}\n")

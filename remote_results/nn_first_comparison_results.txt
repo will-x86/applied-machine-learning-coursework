@@ -1,0 +1,33 @@
+[Regex-logistic] spam removed: 333 | accuracy: 0.750                                                                                          
+[[404 128]                                                                                                                                    
+ [138 394]]                                                                                                                                   
+[IsolationForest-logistic] spam removed: 335 | accuracy: 0.728                                                                                
+[[391 147]                                                                                                                                    
+ [142 382]]                                                                                                                                   
+[Regex-svm] spam removed: 333 | accuracy: 0.758                                                                                               
+[[401 131]                                                                                                                                    
+ [127 405]]
+IsolationForest-svm] spam removed: 335 | accuracy: 0.727                                                                                     
+[[396 142]                                                                                                                                    
+ [148 376]]                                                                                                                                   
+[Regex-sbert] spam removed: 333 | accuracy: 0.778                                                                                             
+[[421 111]                                                                                                                                    
+ [125 407]]                                                                                                                                   
+[IsolationForest-sbert] spam removed: 335 | accuracy: 0.747                                                                                   
+[[407 131]                                                                                                                                    
+ [138 386]]                                                                                                                                   
+[Regex-gemma] spam removed: 333 | accuracy: 0.882                                                                                             
+[[469  63]                                                                                                                                    
+ [ 63 469]]
+[Regex-nn] spam removed: 333 | accuracy: 0.762                                                                                                
+[[406 126]                                                                                                                                    
+ [127 405]]
+[IsolationForest-nn] spam removed: 335 | accuracy: 0.735                                                                                      
+[[421 117]                                                                                                                                    
+ [164 360]]
+[Regex-nn] spam removed: 333 | accuracy: 0.878
+[[479  53]
+ [ 77 455]]
+IsolationForest-nn] spam removed: 335 | accuracy: 0.831
+[[451  87]
+ [ 93 431]]
