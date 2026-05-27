@@ -38,6 +38,39 @@ if (host := os.getenv("HOST")) is not None and "framework" in host:
 nltk.download("wordnet", quiet=True)
 nltk.download("stopwords", quiet=True)
 
+
+def eval_external(trained_models: dict) -> None:
+    from nltk.corpus import movie_reviews
+
+    nltk.download("movie_reviews", quiet=True)
+
+    mr_texts = [movie_reviews.raw(fid) for fid in movie_reviews.fileids()]
+    mr_labels = [
+        0 if movie_reviews.categories(fid) == ["neg"] else 1
+        for fid in movie_reviews.fileids()
+    ]
+
+    for name, (clf, vec, model_type) in trained_models.items():
+        if model_type in ("logistic", "svm"):
+            preds = clf.predict(vec.transform([preprocess(t) for t in mr_texts]))
+        elif model_type == "sbert":
+            preds = clf.predict(vec.encode(mr_texts, show_progress_bar=True))
+        elif model_type == "gemma":
+            preds = clf.predict(
+                vec.encode(
+                    mr_texts, prompt_name="Classification", show_progress_bar=True
+                )
+            )
+        elif model_type == "nn":
+            preds = predict_mlp(clf, vec.encode(mr_texts, show_progress_bar=True))
+
+        cm = get_confusion_matrix(mr_labels, preds)
+        acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
+        print(f"\n[{name} | movie_reviews] accuracy: {acc:.3f}")
+        print(cm)
+        utils.write_results("results.txt", f"{name} (movie_reviews)", cm, acc)
+
+
 p_v: str = "./data/sentiment_analysis_validation_data.csv"
 p_test: str = "./data/sentiment_analysis_test_data.csv"
 p_t: str = "./data/sentiment_analysis_training_data.csv"
@@ -115,7 +148,7 @@ def train_and_eval_nn(
     acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
     print(f"\n[{name}-nn] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}")
     print(cm)
-    return cm, acc
+    return cm, acc, mlp, sbert
 
 
 def train_and_eval_sbert(
@@ -134,7 +167,7 @@ def train_and_eval_sbert(
         f"\n[{name}-sbert] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}"
     )
     print(cm)
-    return cm, acc
+    return cm, acc, clf, sbert
 
 
 def train_and_eval_svm(
@@ -160,7 +193,8 @@ def train_and_eval_svm(
     acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
     print(f"\n[{name}-svm] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}")
     print(cm)
-    return cm, acc
+
+    return cm, acc, clf, tfidf
 
 
 def train_and_eval_gemma(
@@ -184,7 +218,7 @@ def train_and_eval_gemma(
         f"\n[{name}-gemma] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}"
     )
     print(cm)
-    return cm, acc
+    return cm, acc, clf, sbert
 
 
 def train_and_eval_logistic(
@@ -211,7 +245,7 @@ def train_and_eval_logistic(
         f"\n[{name}-logistic] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}"
     )
     print(cm)
-    return cm, acc
+    return cm, acc, clf, tfidf
 
 
 def count_vocabulary_reduction(raw_texts):
@@ -283,7 +317,7 @@ def run_task1():
     clean_labels_r = np.array(labels_train)[mask_regex == 0]
     val_spam_regex = remove_spam_regex(text_val)
 
-    cm_regex_logistic, acc = train_and_eval_logistic(
+    cm_regex_logistic, acc, clf_lr, tfidf_lr = train_and_eval_logistic(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
     utils.write_results("results.txt", "Regex + Logistic", cm_regex_logistic, acc)
@@ -296,7 +330,7 @@ def run_task1():
     clean_labels_i = np.array(labels_train)[mask_iso == 0]
     val_spam_iso = remove_spam_isolation_tfidf(text_train, text_val)
 
-    cm_iso_logistic, acc = train_and_eval_logistic(
+    cm_iso_logistic, acc, clf_iso_lr, tfidf_iso_lr = train_and_eval_logistic(
         clean_texts_i,
         clean_labels_i,
         text_val,
@@ -311,7 +345,7 @@ def run_task1():
         acc,
     )
 
-    cm_regex_svm, acc = train_and_eval_svm(
+    cm_regex_svm, acc, clf_svm, tfidf_svm = train_and_eval_svm(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
     utils.write_results("results.txt", "Regex + SVM", cm_regex_svm, acc)
@@ -326,7 +360,7 @@ def run_task1():
     #     )
     #     utils.write_results("results.txt", "IsolationForest + SVM", cm_iso_svm, acc)
     #
-    cm_regex_bertyboi, acc = train_and_eval_sbert(
+    cm_regex_bertyboi, acc, clf_sb, sbert_sb = train_and_eval_sbert(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
     utils.write_results("results.txt", "Regex + SBERT", cm_regex_bertyboi, acc)
@@ -342,12 +376,12 @@ def run_task1():
     #    )
     #    utils.write_results("results.txt", "IsolationForest + SBERT", cm_iso_bertyboi, acc)
 
-    cm_regex_gemma, acc = train_and_eval_gemma(
+    cm_regex_gemma, acc, clf_gm, sbert_gm = train_and_eval_gemma(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
     utils.write_results("results.txt", "Regex + Gemma", cm_regex_gemma, acc)
 
-    cm_regex_nn, acc = train_and_eval_nn(
+    cm_regex_nn, acc, mlp_nn, sbert_nn = train_and_eval_nn(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
     utils.write_results("results.txt", "Regex + NN(MiniLM)", cm_regex_nn, acc)
@@ -367,7 +401,7 @@ def run_task1():
     #        acc,
     #    )
 
-    cm_regex_gemma_nn, acc = train_and_eval_nn(
+    cm_regex_gemma_nn, acc, mlp_gnm, sbert_gnm = train_and_eval_nn(
         clean_texts_r,
         clean_labels_r,
         text_val,
@@ -393,7 +427,17 @@ def run_task1():
     #        cm_iso_gemma_nn,
     #        acc,
     #    )
-
+    eval_external(
+        {
+            "IsolocationForest+Logistic": (clf_iso_lr, tfidf_iso_lr, "logistic"),
+            "Regex+Logistic": (clf_lr, tfidf_lr, "logistic"),
+            "Regex+SVM": (clf_svm, tfidf_svm, "svm"),
+            "Regex+SBERT": (clf_sb, sbert_sb, "sbert"),
+            "Regex+Gemma": (clf_gm, sbert_gm, "gemma"),
+            "Regex+NN(MiniLM)": (mlp_nn, sbert_nn, "nn"),
+            "Regex+NN(Gemma)": (mlp_gnm, sbert_gnm, "nn"),
+        }
+    )
     _, axes = plt.subplots(4, 4, figsize=(12, 10))
     cms = [
         cm_regex_logistic,

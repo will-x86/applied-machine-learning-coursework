@@ -17,3 +17,4 @@ docs
 .direnv
 out*.png
 *.zip
+*.pth

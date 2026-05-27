@@ -1,11 +1,11 @@
 # pyright: basic
-import os
 
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
 
 from lib import utils
+from netofneural.pictureoffishingnet import train
 
 path_train = "./data/face_alignment_training_data.npz"
 path_val = "./data/face_alignment_validation_data.npz"
@@ -66,11 +66,12 @@ def save_grid():
 
 
 def run_task2():
-    img_train, pts_train, _img_val, _pts_val, _img_test = utils.load_images(
+    img_train, pts_train, img_val, pts_val, _img_test = utils.load_images(
         path_train=path_train, path_val=path_val, path_test=path_test
     )
     print_images_stats()
     save_grid()
+    train(img_train, pts_train, img_val, pts_val, epochs=100)
 
     for i in range(3):
         idx = np.random.randint(0, img_train.shape[0])
