@@ -1,0 +1,99 @@
+dropout=0.5 hidden_dim=512 epochs=40
+
+Regex + Logistic
+Accuracy: 0.750
+TimeTaken: 0.13636064529418945
+Confusion Matrix:
+[[404 128]
+ [138 394]]
+
+IsolationForest + Logistic
+Accuracy: 0.728
+TimeTaken: 0.13741612434387207
+Confusion Matrix:
+[[391 147]
+ [142 382]]
+
+Regex + SVM
+Accuracy: 0.758
+TimeTaken: 0.08910822868347168
+Confusion Matrix:
+[[401 131]
+ [127 405]]
+
+Regex + SBERT
+Accuracy: 0.778
+TimeTaken: 0.3556182384490967
+Confusion Matrix:
+[[421 111]
+ [125 407]]
+
+Regex + Gemma
+Accuracy: 0.882
+TimeTaken: 6.751415014266968
+Confusion Matrix:
+[[469  63]
+ [ 63 469]]
+
+Regex + NN(MiniLM)
+Accuracy: 0.762
+TimeTaken: 0.32546186447143555
+Confusion Matrix:
+[[429 103]
+ [150 382]]
+
+Regex + NN(Gemma)
+Accuracy: 0.885
+TimeTaken: 6.490925312042236
+Confusion Matrix:
+[[470  62]
+ [ 60 472]]
+
+IsolationForest+Logistic (movie_reviews)
+Accuracy: 0.782
+TimeTaken: 1.6311604976654053
+Confusion Matrix:
+[[930  70]
+ [366 634]]
+
+Regex+Logistic (movie_reviews)
+Accuracy: 0.788
+TimeTaken: 1.6087768077850342
+Confusion Matrix:
+[[934  66]
+ [357 643]]
+
+Regex+SVM (movie_reviews)
+Accuracy: 0.803
+TimeTaken: 1.6301090717315674
+Confusion Matrix:
+[[921  79]
+ [314 686]]
+
+Regex+SBERT (movie_reviews)
+Accuracy: 0.610
+TimeTaken: 1.9250144958496094
+Confusion Matrix:
+[[768 232]
+ [548 452]]
+
+Regex+Gemma (movie_reviews)
+Accuracy: 0.865
+TimeTaken: 65.1357831954956
+Confusion Matrix:
+[[974  26]
+ [245 755]]
+
+Regex+NN(MiniLM) (movie_reviews)
+Accuracy: 0.604
+TimeTaken: 1.9392104148864746
+Confusion Matrix:
+[[768 232]
+ [561 439]]
+
+Regex+NN(Gemma) (movie_reviews)
+Accuracy: 0.820
+TimeTaken: 64.79172372817993
+Confusion Matrix:
+[[922  78]
+ [282 718]]

@@ -90,3 +90,20 @@ def train(img_train, pts_train, img_val, pts_val, epochs):
 
     torch.save(model.state_dict(), "face_cnn.pth")
     return model
+
+
+def predict(model, imgs):
+    device = next(model.parameters()).device
+    transform = T.Compose(
+        [
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
+    model.eval()
+    tensors = torch.stack(
+        [transform(cv2.resize(img, (96, 96))) for img in imgs]
+    ).to(device)
+    with torch.no_grad():
+        out = model(tensors).cpu().numpy()
+    return out.reshape(-1, 5, 2) * 256.0
