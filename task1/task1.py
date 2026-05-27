@@ -133,12 +133,9 @@ def train_and_eval_nn(
     name,
     embedding_model: str = "all-MiniLM-L6-v2",
 ):
-    t0 = time.time()
     sbert = SentenceTransformer(embedding_model)
     print(f"[{name}-nn] encoding training texts")
     X_train = sbert.encode(list(clean_texts), show_progress_bar=True)
-    print(f"[{name}-nn] encoding validation text")
-    X_val = sbert.encode(list(val_texts), show_progress_bar=True)
 
     print(f"[{name}-nn] training MLP (input_dim={X_train.shape[1]})")
     mlp = train_mlp(
@@ -148,9 +145,12 @@ def train_and_eval_nn(
         hidden_dim=hidden_dim,
         epochs=epochs,
     )
-    elapsed = time.time() - t0
 
+    print(f"[{name}-nn] encoding validation text")
+    t0 = time.time()
+    X_val = sbert.encode(list(val_texts), show_progress_bar=True)
     nn_preds = predict_mlp(mlp, X_val)
+    elapsed = time.time() - t0
     preds = np.where(val_spam == -1, -1, nn_preds)
     val_mask = preds != -1
 
@@ -166,15 +166,15 @@ def train_and_eval_nn(
 def train_and_eval_sbert(
     clean_texts, clean_labels, val_texts, val_labels, val_spam, name
 ):
-    t0 = time.time()
     sbert = SentenceTransformer("all-MiniLM-L6-v2")
     X_train = sbert.encode(list(clean_texts), show_progress_bar=True)
-    X_val = sbert.encode(list(val_texts), show_progress_bar=True)
     clf = LogisticRegression(max_iter=1000)
     clf.fit(X_train, clean_labels)
-    elapsed = time.time() - t0
 
+    t0 = time.time()
+    X_val = sbert.encode(list(val_texts), show_progress_bar=True)
     preds = np.where(val_spam == -1, -1, clf.predict(X_val))
+    elapsed = time.time() - t0
     val_mask = preds != -1
     cm = get_confusion_matrix(np.array(val_labels)[val_mask], preds[val_mask])
     acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
@@ -193,18 +193,18 @@ def train_and_eval_svm(
     val_spam,
     name,
 ):
-    t0 = time.time()
     tfidf = TfidfVectorizer(
         ngram_range=(1, 2), max_features=tfidf_max_features, sublinear_tf=True
     )
     X_train = tfidf.fit_transform([preprocess(t) for t in clean_texts])
     vizualize_tfidf(tfidf, X_train, name)
-    X_val = tfidf.transform([preprocess(t) for t in val_texts])
     clf = LinearSVC(random_state=seed, max_iter=2000)
     clf.fit(X_train, clean_labels)
-    elapsed = time.time() - t0
 
+    t0 = time.time()
+    X_val = tfidf.transform([preprocess(t) for t in val_texts])
     preds = np.where(val_spam == -1, -1, clf.predict(X_val))
+    elapsed = time.time() - t0
     val_mask = preds != -1
     cm = get_confusion_matrix(np.array(val_labels)[val_mask], preds[val_mask])
     acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
@@ -218,20 +218,20 @@ def train_and_eval_svm(
 def train_and_eval_gemma(
     clean_texts, clean_labels, val_texts, val_labels, val_spam, name
 ):
-    t0 = time.time()
     login()
     sbert = SentenceTransformer("google/embeddinggemma-300M")
     X_train = sbert.encode(
         list(clean_texts), prompt_name="Classification", show_progress_bar=True
     )
+    clf = LogisticRegression(max_iter=1000)
+    clf.fit(X_train, clean_labels)
+
+    t0 = time.time()
     X_val = sbert.encode(
         list(val_texts), prompt_name="Classification", show_progress_bar=True
     )
-    clf = LogisticRegression(max_iter=1000)
-    clf.fit(X_train, clean_labels)
-    elapsed = time.time() - t0
-
     preds = np.where(val_spam == -1, -1, clf.predict(X_val))
+    elapsed = time.time() - t0
     val_mask = preds != -1
     cm = get_confusion_matrix(np.array(val_labels)[val_mask], preds[val_mask])
     acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
@@ -250,18 +250,18 @@ def train_and_eval_logistic(
     val_spam,
     name,
 ):
-    t0 = time.time()
     tfidf = TfidfVectorizer(
         ngram_range=(1, 2), max_features=tfidf_max_features, sublinear_tf=True
     )
     X_train = tfidf.fit_transform([preprocess(t) for t in clean_texts])
     vizualize_tfidf(tfidf, X_train, name)
-    X_val = tfidf.transform([preprocess(t) for t in val_texts])
     clf = LogisticRegression(max_iter=1000)
     clf.fit(X_train, clean_labels)
-    elapsed = time.time() - t0
 
+    t0 = time.time()
+    X_val = tfidf.transform([preprocess(t) for t in val_texts])
     preds = np.where(val_spam == -1, -1, clf.predict(X_val))
+    elapsed = time.time() - t0
     val_mask = preds != -1
     cm = get_confusion_matrix(np.array(val_labels)[val_mask], preds[val_mask])
     acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
