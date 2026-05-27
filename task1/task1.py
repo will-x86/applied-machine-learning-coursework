@@ -74,7 +74,9 @@ def eval_external(trained_models: dict) -> None:
         acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
         print(f"\n[{name} | movie_reviews] accuracy: {acc:.3f} | time: {elapsed:.1f}s")
         print(cm)
-        utils.write_results("results.txt", f"{name} (movie_reviews)", cm, acc, elapsed)
+        utils.write_results(
+            "results.txt", f"{name} (movie_reviews)", cm, acc, time=elapsed
+        )
 
 
 p_v: str = "./data/sentiment_analysis_validation_data.csv"
@@ -339,7 +341,9 @@ def run_task1():
     cm_regex_logistic, acc, clf_lr, tfidf_lr, t = train_and_eval_logistic(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
-    utils.write_results("results.txt", "Regex + Logistic", cm_regex_logistic, acc, t)
+    utils.write_results(
+        "results.txt", "Regex + Logistic", cm_regex_logistic, acc, time=t
+    )
 
     # Isolation Forest to remove spam
     mask_iso = remove_spam_isolation_tfidf(text_train)
@@ -358,13 +362,13 @@ def run_task1():
         "IsolationForest",
     )
     utils.write_results(
-        "results.txt", "IsolationForest + Logistic", cm_iso_logistic, acc, t
+        "results.txt", "IsolationForest + Logistic", cm_iso_logistic, acc, time=t
     )
 
     cm_regex_svm, acc, clf_svm, tfidf_svm, t = train_and_eval_svm(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
-    utils.write_results("results.txt", "Regex + SVM", cm_regex_svm, acc, t)
+    utils.write_results("results.txt", "Regex + SVM", cm_regex_svm, acc, time=t)
     # regex consistently outperformns
     #     cm_iso_svm, acc = train_and_eval_svm(
     #         clean_texts_i,
@@ -379,7 +383,7 @@ def run_task1():
     cm_regex_bertyboi, acc, clf_sb, sbert_sb, t = train_and_eval_sbert(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
-    utils.write_results("results.txt", "Regex + SBERT", cm_regex_bertyboi, acc, t)
+    utils.write_results("results.txt", "Regex + SBERT", cm_regex_bertyboi, acc, time=t)
 
     # regex consistently outperforms
     #    cm_iso_bertyboi, acc = train_and_eval_sbert(
@@ -395,12 +399,12 @@ def run_task1():
     cm_regex_gemma, acc, clf_gm, sbert_gm, t = train_and_eval_gemma(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
-    utils.write_results("results.txt", "Regex + Gemma", cm_regex_gemma, acc, t)
+    utils.write_results("results.txt", "Regex + Gemma", cm_regex_gemma, acc, time=t)
 
     cm_regex_nn, acc, mlp_nn, sbert_nn, t = train_and_eval_nn(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
-    utils.write_results("results.txt", "Regex + NN(MiniLM)", cm_regex_nn, acc, t)
+    utils.write_results("results.txt", "Regex + NN(MiniLM)", cm_regex_nn, acc, time=t)
     # regex consistently outperforms
     #    cm_iso_nn, acc = train_and_eval_nn(
     #        clean_texts_i,
@@ -426,7 +430,9 @@ def run_task1():
         "Regex",
         embedding_model="google/embeddinggemma-300M",
     )
-    utils.write_results("results.txt", "Regex + NN(Gemma)", cm_regex_gemma_nn, acc, t)
+    utils.write_results(
+        "results.txt", "Regex + NN(Gemma)", cm_regex_gemma_nn, acc, time=t
+    )
     # regex outperforms
     #    cm_iso_gemma_nn, acc = train_and_eval_nn(
     #        clean_texts_i,
