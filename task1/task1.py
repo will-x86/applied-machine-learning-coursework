@@ -272,6 +272,31 @@ def train_and_eval_logistic(
     return cm, acc, clf, tfidf, elapsed
 
 
+def write_qualitative_examples(name, texts, labels, preds, n=3):
+    # preds: array with -1=spam, 0=neg, 1=pos
+    val_mask = preds != -1
+    labels_arr = np.array(labels)
+    with open("results.txt", "a") as f:
+        f.write(f"\n--- Qualitative examples: {name} ---\n")
+        for category, true_l, pred_l in [
+            ("True Positive  (pos, correct)", 1, 1),
+            ("True Negative  (neg, correct)", 0, 0),
+            ("False Positive (neg predicted as pos)", 0, 1),
+            ("False Negative (pos predicted as neg)", 1, 0),
+        ]:
+            mask = val_mask & (labels_arr == true_l) & (preds == pred_l)
+            indices = np.where(mask)[0][:n]
+            f.write(f"\n{category}:\n")
+            for idx in indices:
+                snippet = texts[idx][:200].replace("\n", " ")
+                f.write(f"  {snippet}...\n")
+        spam_idx = np.where(preds == -1)[0][:n]
+        f.write("\nSpam detected:\n")
+        for idx in spam_idx:
+            snippet = texts[idx][:200].replace("\n", " ")
+            f.write(f"  {snippet}...\n")
+
+
 def count_vocabulary_reduction(raw_texts):
     words_pre, words_post = set(), set()
     for text in raw_texts:
@@ -317,7 +342,7 @@ def vizualize_tfidf(tfidf, X_train, name):
 
 def run_task1():
     torch.manual_seed(seed)  # oops..
-    text_train, labels_train, text_val, labels_val, _text_test = utils.load_data_train(
+    text_train, labels_train, text_val, labels_val, text_test = utils.load_data_train(
         path_val=p_v, path_test=p_test, path_train=p_t
     )
 
@@ -344,6 +369,12 @@ def run_task1():
     utils.write_results(
         "results.txt", "Regex + Logistic", cm_regex_logistic, acc, time=t
     )
+    preds_lr = np.where(
+        val_spam_regex == -1,
+        -1,
+        clf_lr.predict(tfidf_lr.transform([preprocess(t) for t in text_val])),
+    )
+    write_qualitative_examples("Regex + Logistic", text_val, labels_val, preds_lr)
 
     # Isolation Forest to remove spam
     mask_iso = remove_spam_isolation_tfidf(text_train)
@@ -369,6 +400,12 @@ def run_task1():
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
     utils.write_results("results.txt", "Regex + SVM", cm_regex_svm, acc, time=t)
+    preds_svm = np.where(
+        val_spam_regex == -1,
+        -1,
+        clf_svm.predict(tfidf_svm.transform([preprocess(t) for t in text_val])),
+    )
+    write_qualitative_examples("Regex + SVM", text_val, labels_val, preds_svm)
     # regex consistently outperformns
     #     cm_iso_svm, acc = train_and_eval_svm(
     #         clean_texts_i,
@@ -384,6 +421,12 @@ def run_task1():
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
     utils.write_results("results.txt", "Regex + SBERT", cm_regex_bertyboi, acc, time=t)
+    preds_sbert = np.where(
+        val_spam_regex == -1,
+        -1,
+        clf_sb.predict(sbert_sb.encode(text_val, show_progress_bar=False)),
+    )
+    write_qualitative_examples("Regex + SBERT", text_val, labels_val, preds_sbert)
 
     # regex consistently outperforms
     #    cm_iso_bertyboi, acc = train_and_eval_sbert(
@@ -501,3 +544,12 @@ def run_task1():
     plt.tight_layout()
     plt.savefig("comparison_confusion.png", dpi=150)
     plt.close()
+
+    # Test predictions - Regex + SVM as chosen model
+    test_spam = remove_spam_regex(text_test)
+    test_preds = np.where(
+        test_spam == -1,
+        -1,
+        clf_svm.predict(tfidf_svm.transform([preprocess(t) for t in text_test])),
+    )
+    utils.save_as_csv(test_preds)
