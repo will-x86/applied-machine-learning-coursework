@@ -424,7 +424,7 @@ def run_task1():
     preds_sbert = np.where(
         val_spam_regex == -1,
         -1,
-        clf_sb.predict(sbert_sb.encode(text_val, show_progress_bar=False)),
+        clf_sb.predict(sbert_sb.encode(list(text_val), show_progress_bar=False)),
     )
     write_qualitative_examples("Regex + SBERT", text_val, labels_val, preds_sbert)
 
