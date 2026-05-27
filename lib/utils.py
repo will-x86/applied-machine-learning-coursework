@@ -84,10 +84,19 @@ def save_as_csv(pred_labels, location="."):
     np.savetxt(location + "/results_task1.csv", pred_labels, delimiter=",")
 
 
-def write_results(path: str, name: str, cm, acc: float, dim: int = 0, epoch: int = 0):
+def write_results(
+    path: str,
+    name: str,
+    cm,
+    acc: float,
+    dim: int = 0,
+    epoch: int = 0,
+    time: float = 0,
+):
     with open(path, "a") as f:
         f.write(f"\n{name}\n")
         f.write(f"Accuracy: {acc:.3f}\n")
+        f.write(f"TimeTaken: {time}\n")
         f.write(f"Confusion Matrix:\n{cm}\n")
         if dim != 0 or epoch != 0:
             f.write(f"Epoch: {epoch} - Dim:{dim}\n")

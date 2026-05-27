@@ -1,6 +1,7 @@
 # pyright: basic
 import os
 import re
+import time
 
 import matplotlib
 
@@ -54,6 +55,7 @@ def eval_external(trained_models: dict) -> None:
     ]
 
     for name, (clf, vec, model_type) in trained_models.items():
+        t0 = time.time()
         if model_type in ("logistic", "svm"):
             preds = clf.predict(vec.transform([preprocess(t) for t in mr_texts]))
         elif model_type == "sbert":
@@ -67,11 +69,12 @@ def eval_external(trained_models: dict) -> None:
         elif model_type == "nn":
             preds = predict_mlp(clf, vec.encode(mr_texts, show_progress_bar=True))
 
+        elapsed = time.time() - t0
         cm = get_confusion_matrix(mr_labels, preds)
         acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
-        print(f"\n[{name} | movie_reviews] accuracy: {acc:.3f}")
+        print(f"\n[{name} | movie_reviews] accuracy: {acc:.3f} | time: {elapsed:.1f}s")
         print(cm)
-        utils.write_results("results.txt", f"{name} (movie_reviews)", cm, acc)
+        utils.write_results("results.txt", f"{name} (movie_reviews)", cm, acc, elapsed)
 
 
 p_v: str = "./data/sentiment_analysis_validation_data.csv"
@@ -128,6 +131,7 @@ def train_and_eval_nn(
     name,
     embedding_model: str = "all-MiniLM-L6-v2",
 ):
+    t0 = time.time()
     sbert = SentenceTransformer(embedding_model)
     print(f"[{name}-nn] encoding training texts")
     X_train = sbert.encode(list(clean_texts), show_progress_bar=True)
@@ -142,6 +146,7 @@ def train_and_eval_nn(
         hidden_dim=hidden_dim,
         epochs=epochs,
     )
+    elapsed = time.time() - t0
 
     nn_preds = predict_mlp(mlp, X_val)
     preds = np.where(val_spam == -1, -1, nn_preds)
@@ -149,28 +154,33 @@ def train_and_eval_nn(
 
     cm = get_confusion_matrix(np.array(val_labels)[val_mask], preds[val_mask])
     acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
-    print(f"\n[{name}-nn] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}")
+    print(
+        f"\n[{name}-nn] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f} | time: {elapsed:.1f}s"
+    )
     print(cm)
-    return cm, acc, mlp, sbert
+    return cm, acc, mlp, sbert, elapsed
 
 
 def train_and_eval_sbert(
     clean_texts, clean_labels, val_texts, val_labels, val_spam, name
 ):
+    t0 = time.time()
     sbert = SentenceTransformer("all-MiniLM-L6-v2")
     X_train = sbert.encode(list(clean_texts), show_progress_bar=True)
     X_val = sbert.encode(list(val_texts), show_progress_bar=True)
     clf = LogisticRegression(max_iter=1000)
     clf.fit(X_train, clean_labels)
+    elapsed = time.time() - t0
+
     preds = np.where(val_spam == -1, -1, clf.predict(X_val))
     val_mask = preds != -1
     cm = get_confusion_matrix(np.array(val_labels)[val_mask], preds[val_mask])
     acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
     print(
-        f"\n[{name}-sbert] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}"
+        f"\n[{name}-sbert] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f} | time: {elapsed:.1f}s"
     )
     print(cm)
-    return cm, acc, clf, sbert
+    return cm, acc, clf, sbert, elapsed
 
 
 def train_and_eval_svm(
@@ -181,28 +191,32 @@ def train_and_eval_svm(
     val_spam,
     name,
 ):
+    t0 = time.time()
     tfidf = TfidfVectorizer(
         ngram_range=(1, 2), max_features=tfidf_max_features, sublinear_tf=True
     )
     X_train = tfidf.fit_transform([preprocess(t) for t in clean_texts])
     vizualize_tfidf(tfidf, X_train, name)
     X_val = tfidf.transform([preprocess(t) for t in val_texts])
-
     clf = LinearSVC(random_state=seed, max_iter=2000)
     clf.fit(X_train, clean_labels)
+    elapsed = time.time() - t0
+
     preds = np.where(val_spam == -1, -1, clf.predict(X_val))
     val_mask = preds != -1
     cm = get_confusion_matrix(np.array(val_labels)[val_mask], preds[val_mask])
     acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
-    print(f"\n[{name}-svm] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}")
+    print(
+        f"\n[{name}-svm] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f} | time: {elapsed:.1f}s"
+    )
     print(cm)
-
-    return cm, acc, clf, tfidf
+    return cm, acc, clf, tfidf, elapsed
 
 
 def train_and_eval_gemma(
     clean_texts, clean_labels, val_texts, val_labels, val_spam, name
 ):
+    t0 = time.time()
     login()
     sbert = SentenceTransformer("google/embeddinggemma-300M")
     X_train = sbert.encode(
@@ -213,15 +227,17 @@ def train_and_eval_gemma(
     )
     clf = LogisticRegression(max_iter=1000)
     clf.fit(X_train, clean_labels)
+    elapsed = time.time() - t0
+
     preds = np.where(val_spam == -1, -1, clf.predict(X_val))
     val_mask = preds != -1
     cm = get_confusion_matrix(np.array(val_labels)[val_mask], preds[val_mask])
     acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
     print(
-        f"\n[{name}-gemma] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}"
+        f"\n[{name}-gemma] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f} | time: {elapsed:.1f}s"
     )
     print(cm)
-    return cm, acc, clf, sbert
+    return cm, acc, clf, sbert, elapsed
 
 
 def train_and_eval_logistic(
@@ -232,6 +248,7 @@ def train_and_eval_logistic(
     val_spam,
     name,
 ):
+    t0 = time.time()
     tfidf = TfidfVectorizer(
         ngram_range=(1, 2), max_features=tfidf_max_features, sublinear_tf=True
     )
@@ -240,15 +257,17 @@ def train_and_eval_logistic(
     X_val = tfidf.transform([preprocess(t) for t in val_texts])
     clf = LogisticRegression(max_iter=1000)
     clf.fit(X_train, clean_labels)
+    elapsed = time.time() - t0
+
     preds = np.where(val_spam == -1, -1, clf.predict(X_val))
     val_mask = preds != -1
     cm = get_confusion_matrix(np.array(val_labels)[val_mask], preds[val_mask])
     acc = (cm[0, 0] + cm[1, 1]) / cm.sum()
     print(
-        f"\n[{name}-logistic] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f}"
+        f"\n[{name}-logistic] spam removed: {(val_spam==-1).sum()} | accuracy: {acc:.3f} | time: {elapsed:.1f}s"
     )
     print(cm)
-    return cm, acc, clf, tfidf
+    return cm, acc, clf, tfidf, elapsed
 
 
 def count_vocabulary_reduction(raw_texts):
@@ -267,16 +286,13 @@ def visualize_isolation_forest(train_texts, name="IsolationForest"):
         contamination=regex_contamination_percent, random_state=seed  # pyright: ignore
     ).fit_predict(X)
     labels = np.where(preds == 1, "review", "spam")
-
     X_2d = PCA(n_components=2, random_state=seed).fit_transform(
         X.toarray()  # pyright: ignore
     )
-
     _, ax = plt.subplots(figsize=(8, 6))
     for label, color in [("review", "steelblue"), ("spam", "tomato")]:
         mask = labels == label
         ax.scatter(X_2d[mask, 0], X_2d[mask, 1], c=color, label=label, alpha=0.4, s=10)
-
     ax.set_xlabel("PCA component 1")
     ax.set_ylabel("PCA component 2")
     ax.set_title(f"Isolation Forest spam detection - {name}")
@@ -320,10 +336,10 @@ def run_task1():
     clean_labels_r = np.array(labels_train)[mask_regex == 0]
     val_spam_regex = remove_spam_regex(text_val)
 
-    cm_regex_logistic, acc, clf_lr, tfidf_lr = train_and_eval_logistic(
+    cm_regex_logistic, acc, clf_lr, tfidf_lr, t = train_and_eval_logistic(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
-    utils.write_results("results.txt", "Regex + Logistic", cm_regex_logistic, acc)
+    utils.write_results("results.txt", "Regex + Logistic", cm_regex_logistic, acc, t)
 
     # Isolation Forest to remove spam
     mask_iso = remove_spam_isolation_tfidf(text_train)
@@ -333,7 +349,7 @@ def run_task1():
     clean_labels_i = np.array(labels_train)[mask_iso == 0]
     val_spam_iso = remove_spam_isolation_tfidf(text_train, text_val)
 
-    cm_iso_logistic, acc, clf_iso_lr, tfidf_iso_lr = train_and_eval_logistic(
+    cm_iso_logistic, acc, clf_iso_lr, tfidf_iso_lr, t = train_and_eval_logistic(
         clean_texts_i,
         clean_labels_i,
         text_val,
@@ -342,16 +358,13 @@ def run_task1():
         "IsolationForest",
     )
     utils.write_results(
-        "results.txt",
-        "IsolationForest + Logistic",
-        cm_iso_logistic,
-        acc,
+        "results.txt", "IsolationForest + Logistic", cm_iso_logistic, acc, t
     )
 
-    cm_regex_svm, acc, clf_svm, tfidf_svm = train_and_eval_svm(
+    cm_regex_svm, acc, clf_svm, tfidf_svm, t = train_and_eval_svm(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
-    utils.write_results("results.txt", "Regex + SVM", cm_regex_svm, acc)
+    utils.write_results("results.txt", "Regex + SVM", cm_regex_svm, acc, t)
     # regex consistently outperformns
     #     cm_iso_svm, acc = train_and_eval_svm(
     #         clean_texts_i,
@@ -363,10 +376,10 @@ def run_task1():
     #     )
     #     utils.write_results("results.txt", "IsolationForest + SVM", cm_iso_svm, acc)
     #
-    cm_regex_bertyboi, acc, clf_sb, sbert_sb = train_and_eval_sbert(
+    cm_regex_bertyboi, acc, clf_sb, sbert_sb, t = train_and_eval_sbert(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
-    utils.write_results("results.txt", "Regex + SBERT", cm_regex_bertyboi, acc)
+    utils.write_results("results.txt", "Regex + SBERT", cm_regex_bertyboi, acc, t)
 
     # regex consistently outperforms
     #    cm_iso_bertyboi, acc = train_and_eval_sbert(
@@ -379,15 +392,15 @@ def run_task1():
     #    )
     #    utils.write_results("results.txt", "IsolationForest + SBERT", cm_iso_bertyboi, acc)
 
-    cm_regex_gemma, acc, clf_gm, sbert_gm = train_and_eval_gemma(
+    cm_regex_gemma, acc, clf_gm, sbert_gm, t = train_and_eval_gemma(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
-    utils.write_results("results.txt", "Regex + Gemma", cm_regex_gemma, acc)
+    utils.write_results("results.txt", "Regex + Gemma", cm_regex_gemma, acc, t)
 
-    cm_regex_nn, acc, mlp_nn, sbert_nn = train_and_eval_nn(
+    cm_regex_nn, acc, mlp_nn, sbert_nn, t = train_and_eval_nn(
         clean_texts_r, clean_labels_r, text_val, labels_val, val_spam_regex, "Regex"
     )
-    utils.write_results("results.txt", "Regex + NN(MiniLM)", cm_regex_nn, acc)
+    utils.write_results("results.txt", "Regex + NN(MiniLM)", cm_regex_nn, acc, t)
     # regex consistently outperforms
     #    cm_iso_nn, acc = train_and_eval_nn(
     #        clean_texts_i,
@@ -404,7 +417,7 @@ def run_task1():
     #        acc,
     #    )
 
-    cm_regex_gemma_nn, acc, mlp_gnm, sbert_gnm = train_and_eval_nn(
+    cm_regex_gemma_nn, acc, mlp_gnm, sbert_gnm, t = train_and_eval_nn(
         clean_texts_r,
         clean_labels_r,
         text_val,
@@ -413,7 +426,7 @@ def run_task1():
         "Regex",
         embedding_model="google/embeddinggemma-300M",
     )
-    utils.write_results("results.txt", "Regex + NN(Gemma)", cm_regex_gemma_nn, acc)
+    utils.write_results("results.txt", "Regex + NN(Gemma)", cm_regex_gemma_nn, acc, t)
     # regex outperforms
     #    cm_iso_gemma_nn, acc = train_and_eval_nn(
     #        clean_texts_i,
@@ -432,7 +445,7 @@ def run_task1():
     #    )
     eval_external(
         {
-            "IsolocationForest+Logistic": (clf_iso_lr, tfidf_iso_lr, "logistic"),
+            "IsolationForest+Logistic": (clf_iso_lr, tfidf_iso_lr, "logistic"),
             "Regex+Logistic": (clf_lr, tfidf_lr, "logistic"),
             "Regex+SVM": (clf_svm, tfidf_svm, "svm"),
             "Regex+SBERT": (clf_sb, sbert_sb, "sbert"),
@@ -441,7 +454,8 @@ def run_task1():
             "Regex+NN(Gemma)": (mlp_gnm, sbert_gnm, "nn"),
         }
     )
-    _, axes = plt.subplots(4, 4, figsize=(12, 10))
+
+    _, axes = plt.subplots(2, 4, figsize=(16, 8))
     cms = [
         cm_regex_logistic,
         cm_regex_svm,
@@ -475,5 +489,9 @@ def run_task1():
         )
         ax.set_title(title)
 
+    for ax in axes.ravel()[len(cms) :]:
+        ax.set_visible(False)
+
     plt.tight_layout()
     plt.savefig("comparison_confusion.png", dpi=150)
+    plt.close()
